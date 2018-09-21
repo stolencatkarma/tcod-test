@@ -3,6 +3,9 @@ import tcod
 import sys
 import random
 import tcod.map
+import os
+import json
+from collections import defaultdict
 
 # Setup the font.
 tcod.console_set_custom_font('dejavu16x16_gs_tc.png', tcod.FONT_TYPE_GREYSCALE | tcod.FONT_LAYOUT_TCOD)
@@ -53,6 +56,7 @@ class Player(Object):
     def __init__(self, x, y, char, color, name):
         super().__init__(x, y, char, color)
         self.name = name
+        self.hp = 10
 
 class Monster(Object):
     def __init__(self, x, y, char, color, ident):
@@ -64,15 +68,27 @@ class Stairs(Object):
         # char decides direction. < is down. > is up. player just needs to activate stairs. not choose direction.
         super().__init__(x, y, char, color)
         
-        def draw(self, console):
-            # set the color and then draw the character that represents this object at its position
-            tcod.console_set_default_foreground(console, self.color)
-            tcod.console_put_char(console, self.x, self.y, self.char, tcod.BKGND_NONE)
- 
-        def clear(self, console):
-            # erase the character that represents this object
-            tcod.console_put_char(console, self.x, self.y, ' ', tcod.BKGND_NONE)
-
+class MonsterManager:
+    def __init__(self, root_console):
+        self.MONSTER_TYPES = defaultdict(dict)
+        for root, dirs, files in os.walk('./data/json/monsters/'):
+            for file_data in files:
+                if file_data.endswith('.json'):
+                    with open(root+'/'+file_data, encoding='utf-8') as data_file: # load tile config so we know what tile foes with what ident
+                        data = json.load(data_file)
+                    for item in data:
+                        try:
+                            for key, value in item.items():
+                                if(isinstance(value, list)):
+                                    self.MONSTER_TYPES[item['ident']][key] = []
+                                    for add_value in value:
+                                        self.MONSTER_TYPES[item['ident']][key].append(str(add_value))
+                                else:
+                                    self.MONSTER_TYPES[item['ident']][key] = str(value)
+                        except Exception:
+                            root_console.print_(0, 0, '!! couldn\'t parse: ' + str(item) + ' -- likely missing ident.')
+                            sys.exit()
+        root_console.print_(0, 0, 'total MONSTER_TYPES loaded: ' + str(len(self.MONSTER_TYPES)))
 
 
 MAP_WIDTH = WIDTH # map size is screen width
@@ -123,7 +139,7 @@ full_dungeon_stack[0] = dungeon_level(0) # full_dungeon_stack[0].map would be th
 
 # Initialize the root console in a context.
 with tcod.console_init_root(WIDTH, HEIGHT, 'tcod-test', False) as root_console:
-    
+    MonsterManager = MonsterManager(root_console)
     tcod.sys_set_fps(144)
     state = 'main' # set back to a main menu when we get there.
     

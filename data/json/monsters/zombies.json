@@ -1,0 +1,14 @@
+[
+    {
+        "ident":"zombie",
+        "hp": 2,
+        "weapon":"dagger",
+        "skills":"basic_attack"
+    },
+    {
+        "ident":"zombie child",
+        "hp": 1,
+        "weapon":"teeth",
+        "skills":"basic_attack"
+    }
+]
