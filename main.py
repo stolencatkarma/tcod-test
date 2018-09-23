@@ -141,6 +141,8 @@ my_colors = dict()
 my_colors['black'] = tcod.color.Color(0,0,0)
 my_colors['white'] = tcod.color.Color(255,255,255)
 
+
+
 def make_map(difficulty): # how deep or difficult should the level be we generate.
     new_map = dict()
     rooms = list()
@@ -181,23 +183,21 @@ def make_map(difficulty): # how deep or difficult should the level be we generat
     should_continue = True
     while should_continue:
         if(next_room == 'blank'):
-            # need to make a decent sized room then loop and make another room until we run out of room for rooms. =)
-            next_room_width = random.randint(3,7)
-            next_room_height = random.randint(3,7)
-            room_distance = random.randint(6,8)
-            # find a spot for the next room and then connect the two rooms with a hallway.
+            if(cursor_y <= 3):
+                cursor_y = 4
+            if(cursor_y >= MAP_HEIGHT-3):
+                cursor_y = MAP_HEIGHT-4
             
-            if(cursor_y <= 1):
-                cursor_y = 2
-            if(cursor_y >= MAP_HEIGHT):
-                cursor_y = MAP_HEIGHT-2
-            
-            if(cursor_x <= 1):
-                cursor_x = 2
-            if(cursor_x >= MAP_WIDTH):
-                cursor_x = MAP_WIDTH-2
-                       
+            if(cursor_x <= 3):
+                cursor_x = 4
+            if(cursor_x >= MAP_WIDTH-3):
+                cursor_x = MAP_WIDTH-4
+           
+            next_room_width = random.randint(4,5)
+            next_room_height = random.randint(4,5)
+            room_distance = random.randint(6,7)
 
+            
             can_build_up = True
             for j in range(cursor_y - room_distance, cursor_y - room_distance + next_room_height):
                 for i in range(cursor_x, cursor_x + next_room_width):
@@ -213,10 +213,9 @@ def make_map(difficulty): # how deep or difficult should the level be we generat
                         _check_map[j][i] = True
                 for k in range(room_distance):
                     new_map[cursor_y - k][cursor_x].char = ' '
-                    if(k is room_distance // 2):
-                        objects.append(Door(cursor_x, cursor_y-k, 'U', tcod.blue))
                     _check_map[cursor_y - k][cursor_x] = True
-               
+                cursor_y = cursor_y - room_distance
+                objects.append(Door(cursor_x, cursor_y, 'U', tcod.blue))
                 continue
             
             can_build_left = True
@@ -235,7 +234,7 @@ def make_map(difficulty): # how deep or difficult should the level be we generat
                 for k in range(room_distance):
                     new_map[cursor_y][cursor_x-k].char = ' '
                     _check_map[cursor_y][cursor_x-k] = True
-                
+                cursor_x = cursor_x - room_distance   
                 continue
 
             can_build_down = True
@@ -254,7 +253,7 @@ def make_map(difficulty): # how deep or difficult should the level be we generat
                 for k in range(room_distance):
                     new_map[cursor_y + k][cursor_x].char = ' '
                     _check_map[cursor_y + k][cursor_x] = True
-                
+                cursor_y = cursor_y + room_distance    
                 continue
             
             can_build_right = True
@@ -273,34 +272,117 @@ def make_map(difficulty): # how deep or difficult should the level be we generat
                 for k in range(room_distance):
                     new_map[cursor_y][cursor_x+k].char = ' '
                     _check_map[cursor_y][cursor_x+k] = True
-                
+                cursor_x = cursor_x + room_distance 
                 continue
             
-            
-
-
-            # if we made it here without finding a place to build
-
+            # we are out of rooms to place. place the downstairs
             objects.append(Stairs(cursor_x, cursor_y, tcod.CHAR_ARROW2_S, tcod.color.Color(125, 125, 25)))
-            should_continue = False
+            
+            # do it a few more times 
+            cursor_x = player.x
+            cursor_y = player.y
+            should_break2 = None
+            while(should_break2 is not True):
+                if(cursor_y <= 3):
+                    cursor_y = 4
+                if(cursor_y >= MAP_HEIGHT-3):
+                    cursor_y = MAP_HEIGHT-4
+                
+                if(cursor_x <= 3):
+                    cursor_x = 4
+                if(cursor_x >= MAP_WIDTH-3):
+                    cursor_x = MAP_WIDTH-4
+
+                next_room_width = random.randint(4,5)
+                next_room_height = random.randint(4,5)
+                room_distance = random.randint(6,7)
+                
+                can_build_down = True
+                for j in range(cursor_y + room_distance, cursor_y + room_distance + next_room_height):
+                    for i in range(cursor_x, cursor_x + next_room_width):
+                        try:
+                            if(_check_map[j][i]):
+                                can_build_down = False
+                        except KeyError:
+                            can_build_down = False
+                if(can_build_down):
+                    for j in range(cursor_y+room_distance, cursor_y + room_distance + next_room_height):
+                        for i in range(cursor_x, cursor_x + next_room_width):
+                            new_map[j][i].char = ' '
+                            _check_map[j][i] = True
+                    for k in range(room_distance):
+                        new_map[cursor_y + k][cursor_x].char = ' '
+                        _check_map[cursor_y + k][cursor_x] = True
+                    cursor_y = cursor_y + room_distance    
+                    continue
+
+                can_build_right = True
+                for j in range(cursor_y, cursor_y + next_room_height):
+                    for i in range(cursor_x + room_distance, cursor_x + room_distance + next_room_width):
+                        try:
+                            if(_check_map[j][i]):
+                                can_build_right = False
+                        except KeyError:
+                            can_build_right = False
+                if(can_build_right):
+                    for j in range(cursor_y, cursor_y + next_room_height):
+                        for i in range(cursor_x + room_distance, cursor_x + room_distance + next_room_width):
+                            new_map[j][i].char = ' '
+                            _check_map[j][i] = True
+                    for k in range(room_distance):
+                        new_map[cursor_y][cursor_x+k].char = ' '
+                        _check_map[cursor_y][cursor_x+k] = True
+                    cursor_x = cursor_x + room_distance 
+                    continue
+                can_build_left = True
+                for j in range(cursor_y, cursor_y + next_room_height):
+                    for i in range(cursor_x - room_distance, cursor_x - room_distance + next_room_width):
+                        try:
+                            if(_check_map[j][i]):
+                                can_build_left = False
+                        except KeyError:
+                            can_build_left = False
+                if(can_build_left):
+                    for j in range(cursor_y, cursor_y + next_room_height):
+                        for i in range(cursor_x - room_distance, cursor_x - room_distance + next_room_width):
+                            new_map[j][i].char = ' '
+                            _check_map[j][i] = True
+                    for k in range(room_distance):
+                        new_map[cursor_y][cursor_x-k].char = ' '
+                        _check_map[cursor_y][cursor_x-k] = True
+                    cursor_x = cursor_x - room_distance   
+                    continue
+                can_build_up = True
+                for j in range(cursor_y - room_distance, cursor_y - room_distance + next_room_height):
+                    for i in range(cursor_x, cursor_x + next_room_width):
+                        try:
+                            if(_check_map[j][i]):
+                                can_build_up = False
+                        except KeyError:
+                            can_build_up = False
+                if(can_build_up):
+                    for j in range(cursor_y - room_distance, cursor_y - room_distance + next_room_height):
+                        for i in range(cursor_x, cursor_x + next_room_width):
+                            new_map[j][i].char = ' '
+                            _check_map[j][i] = True
+                    for k in range(room_distance):
+                        new_map[cursor_y - k][cursor_x].char = ' '
+                        if(k is room_distance // 2):
+                            _objects.append(Door(cursor_x, cursor_y-k, 'U', tcod.blue))
+                        _check_map[cursor_y - k][cursor_x] = True
+                    cursor_y = cursor_y - room_distance
+                    continue
+                
                 
 
-            '''
-            can_build_down = True
-            for j in range(next_room_height):
-                for i in range(next_room_width):
-                    if(_check_map[j + cursor_y - room_distance][i + cursor_x]):
-                        can_build_down = False
-            '''
+                
+                
+                
+                
+                should_break2 = True
+            
+            should_continue = False
 
-
-
-
-    # loop - create a room (different types, some are hazard, puzzle, treasure)
-    #    add monsters if combat room, treasure if treasure room, etc.
-    
-    # create hallway and loop.
-    # create up and down stairs.
     # generate a possible chest.
     
     return new_map, creatures, objects
